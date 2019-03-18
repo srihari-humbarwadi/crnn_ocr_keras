@@ -20,24 +20,24 @@ ngpus = 4
 batch_size = int(sys.argv[1])
 epochs = int(sys.argv[2])
 
-image_list = list(iglob('../synth/*'))
+image_list = list(iglob('../dataset/*/*'))
 image_list.sort()
 print(f'=> Found {len(image_list)} images <=')
 
 w = []
 h = []
-max_w = 800
-max_h = 32
+# max_w = 1928
+# max_h = 64
 
-# for img in tqdm(image_list):
-#     w.append(img_to_array(load_img(img)).shape[1])
-#     h.append(img_to_array(load_img(img)).shape[0])
-# max_w = max(w) if max(w) % 2 == 0 else max(w) + 1
-# # assert len(set(h)) == 1
-# max_h = h[0]
+for img in tqdm(image_list):
+    w.append(img_to_array(load_img(img)).shape[1])
+    h.append(img_to_array(load_img(img)).shape[0])
+max_w = max(w) if max(w) % 2 == 0 else max(w) + 1
+assert len(set(h)) == 1
+max_h = h[0]
 print(f'=> Max width of images {max_w} <=')
 
-labels = ' '.join([x.split('/')[-1].split('_')[1] for x in image_list])
+labels = ' '.join([x.split('/')[-1].split('_')[0] for x in image_list])
 vocab = sorted(list(set(labels)))
 vocab_size = len(vocab)
 print(f'=> Vocab size of dataset {vocab_size} <=')
@@ -45,7 +45,7 @@ print(f'=> Vocab size of dataset {vocab_size} <=')
 letter_idx = {x: idx for idx, x in enumerate(vocab)}
 idx_letter = {v: k for k, v in letter_idx.items()}
 
-string_lens = [len(x) for x in [x.split('/')[-1].split('_')[1] for x in image_list]]
+string_lens = [len(x) for x in [x.split('/')[-1].split('_')[0] for x in image_list]]
 max_string_len = max(string_lens)
 print(f'=> Max string len {max_string_len} <=')
 
@@ -62,36 +62,6 @@ def ctc_loss(tensor_list):
 def dummy_loss(y_true, y_pred):
     return y_pred
 
-
-# print('=> Building model <=')
-# input_layer = Input(shape=(h, w, 1), name='image_input')
-# y = Conv2D(filters=32, kernel_size=3, padding='same',
-#            kernel_initializer='he_normal', activation='relu', name='conv2d_1')(input_layer)
-# y = MaxPool2D(pool_size=(2, 2), name='maxpooling2d_1')(y)
-# y = Conv2D(filters=32, kernel_size=3, padding='same',
-#            kernel_initializer='he_normal', activation='relu', name='conv2d_2')(y)
-# y = MaxPool2D(pool_size=2, name='maxpooling2d_2')(y)
-# y = Conv2D(filters=32, kernel_size=3, padding='same',
-#            kernel_initializer='he_normal', activation='relu', name='conv2d_3')(y)
-# # y = MaxPool2D(pool_size=2, name='maxpooling2d_3')(y)
-# y = Reshape(target_shape=(h // 4, w // 4 * 32), name='reshape')(y)
-
-# y = Bidirectional(CuDNNLSTM(units=512, return_sequences=True),
-#                   name='biLSTM_1')(y)
-# y = Bidirectional(CuDNNLSTM(units=512, return_sequences=True),
-#                   name='biLSTM_2')(y)
-# output_layer = TimeDistributed(Dense(
-#     units=vocab_size+1, kernel_initializer='he_normal', activation='softmax'), name='char_output')(y)
-
-# labels = Input(shape=(max_string_len, ))
-# label_length = Input(shape=(1,))
-# input_length = Input(shape=(1,))
-# loss_layer = Lambda(ctc_loss, output_shape=(1,), name='loss_layer')(
-#     [output_layer, labels, input_length, label_length])
-# input_tensors = [input_layer, labels, label_length, input_length]
-# train_model = Model(inputs=input_tensors, outputs=loss_layer)
-# print('=> Build completed successfully <=')
-# print(f'=> Creating model replicas for distributed training across {ngpus} gpus <=')
 
 downscale_factor = 4
 print('=> Building model <=')
